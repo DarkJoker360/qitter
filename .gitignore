@@ -1,0 +1,8 @@
+.storage/
+node_modules/
+dist/
+models/
+web/dist/
+web/node_modules/
+bun.lock
+*.lock
