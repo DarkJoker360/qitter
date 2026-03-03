@@ -36,24 +36,22 @@ function emitNewEntries(): void {
 		.then(async () => {
 			if (!base) return;
 			try {
-				for await (const e of base.view.createReadStream({
-					gte: "post/",
-					lt: "post0",
-				})) {
-					const v = e.value as { id: string };
+				const db = base.view;
+				await db.update();
+				const posts = await db.find("@qitter/posts").toArray();
+				for (const p of posts) {
+					const v = p as { id: string };
 					if (!seenPostIds.has(v.id)) {
 						seenPostIds.add(v.id);
-						send({ type: "postAdded", post: e.value });
+						send({ type: "postAdded", post: p });
 					}
 				}
-				for await (const e of base.view.createReadStream({
-					gte: "comment/",
-					lt: "comment0",
-				})) {
-					const v = e.value as { id: string };
+				const comments = await db.find("@qitter/comments").toArray();
+				for (const c of comments) {
+					const v = c as { id: string };
 					if (!seenCommentIds.has(v.id)) {
 						seenCommentIds.add(v.id);
-						send({ type: "commentAdded", comment: e.value });
+						send({ type: "commentAdded", comment: c });
 					}
 				}
 			} catch {

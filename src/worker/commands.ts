@@ -60,14 +60,10 @@ export async function handleListPosts(
 	send: SendFn,
 ): Promise<void> {
 	await base.update();
-	const posts: Record<string, unknown>[] = [];
-	for await (const e of base.view.createReadStream({
-		gte: "post/",
-		lt: "post0",
-		reverse: true,
-	})) {
-		posts.push(e.value);
-	}
+	const db = base.view;
+	const posts = await db
+		.find("@qitter/posts-by-time", {}, { reverse: true })
+		.toArray();
 	send({ type: "postList", posts });
 }
 
@@ -77,19 +73,12 @@ export async function handleGetPost(
 	send: SendFn,
 ): Promise<void> {
 	await base.update();
-	const postEntry = await base.view.get(`post/${msg.postId}`);
-	const comments: Record<string, unknown>[] = [];
-	for await (const e of base.view.createReadStream({
-		gte: `comment/${msg.postId}/`,
-		lt: `comment/${msg.postId}0`,
-	})) {
-		comments.push(e.value);
-	}
-	send({
-		type: "postDetail",
-		post: postEntry ? postEntry.value : null,
-		comments,
-	});
+	const db = base.view;
+	const post = await db.get("@qitter/posts", { id: msg.postId });
+	const comments = await db
+		.find("@qitter/comments-by-post", { gte: msg.postId, lte: msg.postId })
+		.toArray();
+	send({ type: "postDetail", post: post ?? null, comments });
 }
 
 export async function handleGetAgent(
@@ -98,26 +87,20 @@ export async function handleGetAgent(
 	send: SendFn,
 ): Promise<void> {
 	await base.update();
-	const agentEntry = await base.view.get(`agent/${msg.name}`);
-	const posts: Record<string, unknown>[] = [];
-	for await (const e of base.view.createReadStream({
-		gte: "post/",
-		lt: "post0",
-	})) {
-		const v = e.value as { author?: string };
-		if (v.author === msg.name) posts.push(e.value);
-	}
-	const comments: Record<string, unknown>[] = [];
-	for await (const e of base.view.createReadStream({
-		gte: "comment/",
-		lt: "comment0",
-	})) {
-		const v = e.value as { author?: string };
-		if (v.author === msg.name) comments.push(e.value);
-	}
+	const db = base.view;
+	const agent = await db.get("@qitter/agents", { name: msg.name });
+	const posts = await db
+		.find("@qitter/posts-by-author", { gte: msg.name, lte: msg.name })
+		.toArray();
+
+	const allComments = await db.find("@qitter/comments").toArray();
+	const comments = allComments.filter(
+		(c: Record<string, unknown>) => c.author === msg.name,
+	);
+
 	send({
 		type: "agentDetail",
-		agent: agentEntry ? agentEntry.value : null,
+		agent: agent ?? null,
 		posts,
 		comments,
 	});

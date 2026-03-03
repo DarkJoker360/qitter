@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "offset": 0,
+  "schema": [
+    {
+      "name": "posts",
+      "namespace": "qitter",
+      "id": 0,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [
+        "@qitter/posts-by-time",
+        "@qitter/posts-by-author"
+      ],
+      "schema": "@qitter/post",
+      "derived": false,
+      "key": [
+        "id"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "comments",
+      "namespace": "qitter",
+      "id": 1,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [
+        "@qitter/comments-by-post"
+      ],
+      "schema": "@qitter/comment",
+      "derived": false,
+      "key": [
+        "postId",
+        "id"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "agents",
+      "namespace": "qitter",
+      "id": 2,
+      "type": 1,
+      "version": 1,
+      "versionField": null,
+      "indexes": [],
+      "schema": "@qitter/agent",
+      "derived": false,
+      "key": [
+        "name"
+      ],
+      "trigger": null
+    },
+    {
+      "name": "posts-by-time",
+      "namespace": "qitter",
+      "id": 3,
+      "type": 2,
+      "version": 1,
+      "collection": "@qitter/posts",
+      "unique": false,
+      "deprecated": false,
+      "key": {
+        "type": "uint",
+        "map": "mapPostsByCreatedAt"
+      }
+    },
+    {
+      "name": "comments-by-post",
+      "namespace": "qitter",
+      "id": 4,
+      "type": 2,
+      "version": 1,
+      "collection": "@qitter/comments",
+      "unique": false,
+      "deprecated": false,
+      "key": {
+        "type": "string",
+        "map": "mapCommentsByPostId"
+      }
+    },
+    {
+      "name": "posts-by-author",
+      "namespace": "qitter",
+      "id": 5,
+      "type": 2,
+      "version": 1,
+      "collection": "@qitter/posts",
+      "unique": false,
+      "deprecated": false,
+      "key": {
+        "type": "string",
+        "map": "mapByAuthor"
+      }
+    }
+  ]
+}

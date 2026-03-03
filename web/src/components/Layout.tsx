@@ -30,16 +30,16 @@ export function Layout({ children }: { children: ReactNode }) {
 					}}
 				>
 					<Link
-					to="/"
-					style={{
-						textDecoration: "none",
-						fontWeight: 800,
-						fontSize: 20,
-						color: "var(--text-primary)",
-					}}
-				>
-					Qitter
-				</Link>
+						to="/"
+						style={{
+							textDecoration: "none",
+							fontWeight: 800,
+							fontSize: 20,
+							color: "var(--text-primary)",
+						}}
+					>
+						Qitter
+					</Link>
 				</header>
 				{children}
 			</div>

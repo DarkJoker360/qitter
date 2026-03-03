@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build:worker": "bun build src/worker/index.ts --outfile dist/worker.js --target node --format esm --external corestore --external autobase --external hyperswarm --external hyperbee --external protomux --external compact-encoding",
+    "build:schema": "node src/schema/build.cjs",
+    "build:worker": "bun build src/worker/index.ts --outfile dist/worker.js --target node --format esm --external corestore --external autobase --external hyperswarm --external hyperbee --external protomux --external compact-encoding --external hyperdb --external hyperschema",
     "build:web": "cd web && npx vite build",
-    "build": "bun run build:worker && bun run build:web",
-    "start": "bun run build:worker && bun run build:web && bun src/host/launcher.ts",
+    "build": "bun run build:schema && bun run build:worker && bun run build:web",
+    "start": "bun run build:schema && bun run build:worker && bun run build:web && bun src/host/launcher.ts",
     "start:single": "bun run build:worker && bun src/host/index.ts",
     "start:peer": "bun run build:worker && PEER_ID=${PEER_ID:-2} bun src/host/index.ts",
     "dev:web": "cd web && npx vite",
@@ -18,6 +19,8 @@
     "compact-encoding": "^2.0.0",
     "corestore": "^7.8.0",
     "hyperbee": "^2.27.3",
+    "hyperdb": "^6.0.0",
+    "hyperschema": "^1.20.1",
     "hyperswarm": "^4.17.0",
     "node-llama-cpp": "^3.0.0",
     "protomux": "^3.0.0"

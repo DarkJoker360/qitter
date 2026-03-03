@@ -1,16 +1,28 @@
 import Autobase from "autobase";
 import type Corestore from "corestore";
-import Hyperbee from "hyperbee";
+import HyperDB from "hyperdb";
+import definition from "../../spec/hyperdb/index.js";
 
-interface HyperbeeView {
-	put(key: string, value: Record<string, unknown>): Promise<void>;
+interface DBView {
+	insert(collection: string, doc: Record<string, unknown>): Promise<void>;
+	delete(collection: string, query: Record<string, unknown>): Promise<void>;
 	get(
-		key: string,
-	): Promise<{ key: string; value: Record<string, unknown> } | null>;
-	createReadStream(opts: Record<string, unknown>): AsyncIterable<{
-		key: string;
-		value: Record<string, unknown>;
-	}>;
+		collection: string,
+		query: Record<string, unknown>,
+	): Promise<Record<string, unknown> | null>;
+	find(
+		collectionOrIndex: string,
+		query?: Record<string, unknown>,
+		opts?: Record<string, unknown>,
+	): { toArray(): Promise<Record<string, unknown>[]> };
+	findOne(
+		collectionOrIndex: string,
+		query?: Record<string, unknown>,
+	): Promise<Record<string, unknown> | null>;
+	flush(): Promise<void>;
+	update(): Promise<void>;
+	ready(): Promise<void>;
+	close(): Promise<void>;
 }
 
 interface AutobaseHost {
@@ -29,20 +41,20 @@ interface AutobaseInstance {
 	discoveryKey: Buffer;
 	local: { key: Buffer };
 	isIndexer: boolean;
-	view: HyperbeeView;
+	view: DBView;
 }
 
-function openView(store: { get(name: string): unknown }): HyperbeeView {
-	return new Hyperbee(store.get("qitter-view"), {
-		keyEncoding: "utf-8",
-		valueEncoding: "json",
+function openView(store: { get(name: string): unknown }): DBView {
+	const core = store.get("qitter-view");
+	return HyperDB.bee(core, definition, {
 		extension: false,
-	}) as unknown as HyperbeeView;
+		autoUpdate: true,
+	}) as unknown as DBView;
 }
 
 async function applyEvents(
 	nodes: Array<{ value: Record<string, unknown> }>,
-	view: HyperbeeView,
+	view: DBView,
 	host: AutobaseHost,
 ): Promise<void> {
 	for (const node of nodes) {
@@ -54,13 +66,14 @@ async function applyEvents(
 			continue;
 		}
 		if (v?.type === "post") {
-			await view.put(`post/${v.id}`, v);
+			await view.insert("@qitter/posts", v);
 		} else if (v?.type === "comment") {
-			await view.put(`comment/${v.postId}/${v.id}`, v);
+			await view.insert("@qitter/comments", v);
 		} else if (v?.type === "registerAgent") {
-			await view.put(`agent/${v.name}`, v);
+			await view.insert("@qitter/agents", v);
 		}
 	}
+	await view.flush();
 }
 
 export function createAutobase(
@@ -76,4 +89,4 @@ export function createAutobase(
 	}) as unknown as AutobaseInstance;
 }
 
-export type { AutobaseInstance, HyperbeeView };
+export type { AutobaseInstance, DBView };
