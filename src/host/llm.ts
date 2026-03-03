@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 import {
+	getLlama,
 	type Llama,
 	type LlamaContext,
 	type LlamaModel,
-	getLlama,
 	resolveModelFile,
 } from "node-llama-cpp";
 
@@ -33,21 +33,24 @@ export async function initLLM(): Promise<void> {
 	console.log("[LLM] Ready");
 }
 
-async function generate(prompt: string): Promise<string> {
+async function generate(
+	systemPrompt: string,
+	userPrompt: string,
+): Promise<string> {
 	if (!context) throw new Error("LLM not initialized");
 
 	const { LlamaChatSession } = await import("node-llama-cpp");
 	const sequence = context.getSequence();
 	const session = new LlamaChatSession({
 		contextSequence: sequence,
-		systemPrompt:
-			"/no_think\nYou are a creative writing assistant. Be concise. Never use markdown formatting. Never wrap output in code fences. Output plain text only.",
+		systemPrompt: `/no_think\n${systemPrompt}`,
 	});
 
 	try {
-		const result = await session.prompt(prompt, {
+		const result = await session.prompt(userPrompt, {
 			maxTokens: 200,
-			temperature: 0.9,
+			temperature: 1.0,
+			topP: 0.9,
 		});
 		return cleanOutput(result);
 	} finally {
@@ -56,22 +59,15 @@ async function generate(prompt: string): Promise<string> {
 }
 
 function cleanOutput(text: string): string {
-	let cleaned = text
+	return text
 		.replace(/<think>[\s\S]*?<\/think>/g, "")
 		.replace(/```[\s\S]*?```/g, "")
 		.replace(/```\w*/g, "")
+		.replace(/^["']|["']$/g, "")
 		.trim();
-
-	// Remove leading JSON-like noise if the output starts with {
-	if (cleaned.startsWith("{") && !cleaned.endsWith("}")) {
-		const braceEnd = cleaned.indexOf("}");
-		if (braceEnd > 0) cleaned = cleaned.slice(braceEnd + 1).trim();
-	}
-
-	return cleaned;
 }
 
-const NAME_POOL = [
+const NAME_BASES = [
 	"nebula",
 	"pixel",
 	"echo",
@@ -100,55 +96,55 @@ const NAME_POOL = [
 	"dusk",
 	"jade",
 	"onyx",
+	"mira",
+	"sage",
+	"coda",
+	"reef",
+	"fern",
+	"lynx",
+	"wren",
+	"pike",
 ];
 
-const PERSONALITY_SEEDS = [
-	"who debates tech ethics over coffee",
-	"obsessed with retro video games and synthwave music",
-	"who finds beauty in math and writes poetry about fractals",
-	"a foodie traveler documenting street food around the world",
-	"who believes aliens already walk among us",
-	"an amateur astronomer tracking comets from the backyard",
-	"who collects vinyl records and argues about audio quality",
-	"a philosophy nerd who questions everything",
-	"who paints landscapes and rants about modern art",
-	"a night owl who thrives in the chaos of late-night coding",
+const PERSONALITY_TEMPLATES = [
+	"A tech skeptic who debates AI ethics over espresso and always plays devil's advocate.",
+	"An obsessive retro gamer who ranks everything by 8-bit nostalgia value.",
+	"A math poet who sees fractals in everything and writes haikus about prime numbers.",
+	"A street food nomad documenting every market stall from Bangkok to Mexico City.",
+	"A conspiracy-curious stargazer convinced we are not alone in the universe.",
+	"A backyard astronomer who tracks comets and rants about light pollution.",
+	"An audiophile vinyl collector who will argue about warm analog sound for hours.",
+	"A philosophy dropout who questions the meaning of every mundane thing.",
+	"A landscape painter who despises minimalism and loves bold chaotic color.",
+	"A nocturnal coder who writes best at 3am fueled by lo-fi beats and ramen.",
+	"A history buff who connects ancient civilizations to modern politics.",
+	"A climate activist who tracks weather patterns and shares eco tips.",
+	"A sci-fi bookworm who rates real science by how close it is to fiction.",
+	"A dance music producer who sees rhythm in traffic patterns and birdsong.",
 ];
 
 export async function generateIdentity(): Promise<{
 	name: string;
 	personality: string;
 }> {
-	const seed = NAME_POOL[Math.floor(Math.random() * NAME_POOL.length)];
+	const base = NAME_BASES[Math.floor(Math.random() * NAME_BASES.length)];
 	const suffix = randomBytes(2).toString("hex");
-	const pSeed =
-		PERSONALITY_SEEDS[Math.floor(Math.random() * PERSONALITY_SEEDS.length)];
+	const name = `${base}${suffix}`;
+
+	const template =
+		PERSONALITY_TEMPLATES[
+			Math.floor(Math.random() * PERSONALITY_TEMPLATES.length)
+		];
 
 	const raw = await generate(
-		`Invent a unique fictional social media persona ${pSeed}. Reply with ONLY a JSON object with "name" and "personality" fields. The name must be a single creative lowercase word. Example format: {"name":"${seed}${suffix}","personality":"A ..."}`,
+		"You create fictional social media bios. Output a single sentence personality description. No JSON. No quotes. Plain text only.",
+		`Write a unique personality bio for someone called "${name}" who is: ${template} Rephrase it in your own words, make it distinctive.`,
 	);
 
-	try {
-		const jsonStr = extractJSON(raw);
-		const parsed = JSON.parse(jsonStr);
-		if (parsed.name && parsed.personality) {
-			let name = String(parsed.name)
-				.toLowerCase()
-				.replace(/[^a-z0-9]/g, "");
-			if (name.length < 3) name = `${seed}${suffix}`;
-			return {
-				name: name.slice(0, 16),
-				personality: String(parsed.personality).slice(0, 200),
-			};
-		}
-	} catch {
-		// fallback below
-	}
+	const personality =
+		raw && raw.length > 15 && !raw.includes("{") ? raw.slice(0, 200) : template;
 
-	return {
-		name: `${seed}${suffix}`,
-		personality: `A creative soul ${pSeed}.`,
-	};
+	return { name, personality };
 }
 
 export async function generatePost(
@@ -156,28 +152,31 @@ export async function generatePost(
 	personality: string,
 ): Promise<string> {
 	const topics = [
-		"technology",
-		"nature",
-		"philosophy",
-		"food",
-		"music",
-		"space",
-		"books",
-		"art",
-		"science",
-		"travel",
-		"movies",
-		"sports",
-		"weather",
-		"dreams",
-		"history",
+		"a hot take on technology",
+		"something beautiful in nature",
+		"a philosophical thought",
+		"the best meal ever",
+		"a song stuck in your head",
+		"a mind-blowing space fact",
+		"a book recommendation",
+		"an opinion on modern art",
+		"a weird science discovery",
+		"a travel memory",
+		"a movie that changed your perspective",
+		"an unpopular sports opinion",
+		"today's weather vibes",
+		"a recurring dream",
+		"a forgotten piece of history",
 	];
 	const topic = topics[Math.floor(Math.random() * topics.length)];
+
 	const result = await generate(
-		`You are ${agentName}, a social media user. ${personality} Write a short, original social media post about ${topic}. 1-3 sentences. Be creative and opinionated. Plain text only.`,
+		`You are ${agentName}. ${personality} You write short, punchy social media posts. No hashtags. No markdown. Plain text only.`,
+		`Write an original post about: ${topic}. Be yourself. 1-3 sentences max.`,
 	);
+
 	if (!result || result.length < 10) {
-		return `Thinking about ${topic} today. What a time to be alive on the decentralized web.`;
+		return `Thinking about ${topic.replace(/^a |^an /i, "")} today. The world never stops surprising me.`;
 	}
 	return result;
 }
@@ -188,16 +187,38 @@ export async function generateComment(
 	postAuthor: string,
 	postBody: string,
 ): Promise<string> {
+	const truncated = postBody.slice(0, 120);
+
 	const result = await generate(
-		`You are ${agentName}. ${personality} Reply to ${postAuthor}'s post: "${postBody.slice(0, 150)}" Write a short, conversational reply. 1-2 sentences. Plain text only.`,
+		`You are ${agentName}. ${personality} You are replying to someone's post on social media. CRITICAL RULES: Do NOT repeat or rephrase what they said. Do NOT copy any part of their post. Write your OWN unique thought as a response. Be conversational. Plain text only. 1-2 sentences.`,
+		`${postAuthor} posted: "${truncated}"\n\nWrite your reply (remember: do NOT copy their words):`,
 	);
-	if (!result || result.length < 5) {
-		return `@${postAuthor} that's a really interesting take!`;
+
+	if (!result || result.length < 5 || isTooSimilar(result, postBody)) {
+		const fallbacks = [
+			`Couldn't agree more, @${postAuthor}! This is exactly what I've been thinking about.`,
+			`@${postAuthor} now that's a perspective I hadn't considered before.`,
+			`Interesting take @${postAuthor}. I see it a bit differently though.`,
+			`@${postAuthor} this hits different. Really makes you think.`,
+			`Love this @${postAuthor}. We need more conversations like this.`,
+		];
+		return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 	}
 	return result;
 }
 
-function extractJSON(text: string): string {
+function isTooSimilar(comment: string, post: string): boolean {
+	const cWords = new Set(comment.toLowerCase().split(/\s+/));
+	const pWords = post.toLowerCase().split(/\s+/);
+	if (pWords.length === 0) return false;
+	let overlap = 0;
+	for (const w of pWords) {
+		if (w.length > 3 && cWords.has(w)) overlap++;
+	}
+	return overlap / pWords.length > 0.5;
+}
+
+function _extractJSON(text: string): string {
 	const match = text.match(/\{[^}]*\}/);
 	return match ? match[0] : text;
 }

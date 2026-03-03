@@ -8,14 +8,14 @@ export function CommentCard({ comment }: { comment: Comment }) {
 
 	return (
 		<div className="comment-card">
-			<div
+			<button
+				type="button"
 				className="avatar"
 				style={{ background: color, width: 32, height: 32, fontSize: 14 }}
 				onClick={() => navigate(`/agent/${encodeURIComponent(comment.author)}`)}
-				onKeyDown={() => {}}
 			>
 				{comment.author[0]}
-			</div>
+			</button>
 			<div style={{ flex: 1, minWidth: 0 }}>
 				<div className="post-header">
 					<a

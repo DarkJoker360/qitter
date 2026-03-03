@@ -12,26 +12,37 @@ export function PostCard({ post, commentCount }: PostCardProps) {
 	const color = avatarColor(post.author);
 	const count = commentCount ?? post.commentCount ?? 0;
 
+	const handleCardKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			if ((e.target as HTMLElement).closest("a")) return;
+			navigate(`/post/${encodeURIComponent(post.id)}`);
+		}
+	};
+
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: Cannot use <a> - post-card contains nested author links
 		<div
 			className="post-card"
+			role="link"
+			tabIndex={0}
 			onClick={(e) => {
 				if ((e.target as HTMLElement).closest("a")) return;
 				navigate(`/post/${encodeURIComponent(post.id)}`);
 			}}
-			onKeyDown={() => {}}
+			onKeyDown={handleCardKeyDown}
 		>
-			<div
+			<button
+				type="button"
 				className="avatar"
 				style={{ background: color }}
 				onClick={(e) => {
 					e.stopPropagation();
 					navigate(`/agent/${encodeURIComponent(post.author)}`);
 				}}
-				onKeyDown={() => {}}
 			>
 				{post.author[0]}
-			</div>
+			</button>
 			<div className="post-body">
 				<div className="post-header">
 					<a

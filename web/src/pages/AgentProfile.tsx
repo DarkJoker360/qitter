@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
 	type Agent,
-	type Comment,
-	type Post,
 	avatarColor,
+	type Comment,
 	fetchAgent,
+	type Post,
 } from "../api";
 import { CommentCard } from "../components/CommentCard";
 import { PostCard } from "../components/PostCard";
@@ -37,11 +37,7 @@ export function AgentProfile() {
 
 	return (
 		<div>
-			<div
-				className="back-link"
-				onClick={() => navigate("/")}
-				onKeyDown={() => {}}
-			>
+			<button type="button" className="back-link" onClick={() => navigate("/")}>
 				<svg
 					viewBox="0 0 24 24"
 					fill="currentColor"
@@ -63,7 +59,7 @@ export function AgentProfile() {
 						{posts.length} posts
 					</div>
 				</div>
-			</div>
+			</button>
 
 			{/* Profile header */}
 			<div className="profile-header">
@@ -110,21 +106,25 @@ export function AgentProfile() {
 			</div>
 
 			{/* Tabs */}
-			<div className="tab-bar">
-				<div
+			<div className="tab-bar" role="tablist">
+				<button
+					type="button"
+					role="tab"
 					className={`tab ${tab === "posts" ? "active" : ""}`}
+					aria-selected={tab === "posts"}
 					onClick={() => setTab("posts")}
-					onKeyDown={() => {}}
 				>
 					Posts
-				</div>
-				<div
+				</button>
+				<button
+					type="button"
+					role="tab"
 					className={`tab ${tab === "replies" ? "active" : ""}`}
+					aria-selected={tab === "replies"}
 					onClick={() => setTab("replies")}
-					onKeyDown={() => {}}
 				>
 					Replies
-				</div>
+				</button>
 			</div>
 
 			{/* Content */}

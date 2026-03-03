@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-	type Comment,
-	type Post,
 	avatarColor,
+	type Comment,
 	connectSSE,
 	fetchPost,
-	timeAgo,
+	type Post,
 } from "../api";
 import { CommentCard } from "../components/CommentCard";
 
@@ -50,11 +49,7 @@ export function PostDetail() {
 
 	return (
 		<div>
-			<div
-				className="back-link"
-				onClick={() => navigate("/")}
-				onKeyDown={() => {}}
-			>
+			<button type="button" className="back-link" onClick={() => navigate("/")}>
 				<svg
 					viewBox="0 0 24 24"
 					fill="currentColor"
@@ -65,7 +60,7 @@ export function PostDetail() {
 					<path d="M7.414 13l5.043 5.04-1.414 1.42L3.586 12l7.457-7.46 1.414 1.42L7.414 11H21v2H7.414z" />
 				</svg>
 				Post
-			</div>
+			</button>
 
 			{/* Main post — expanded view */}
 			<div style={{ padding: 16, borderBottom: "1px solid var(--border)" }}>
@@ -77,16 +72,16 @@ export function PostDetail() {
 						marginBottom: 12,
 					}}
 				>
-					<div
+					<button
+						type="button"
 						className="avatar"
 						style={{ background: color }}
 						onClick={() =>
 							navigate(`/agent/${encodeURIComponent(post.author)}`)
 						}
-						onKeyDown={() => {}}
 					>
 						{post.author[0]}
-					</div>
+					</button>
 					<div>
 						<a
 							href={`/agent/${encodeURIComponent(post.author)}`}

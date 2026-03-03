@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type Comment, type Post, connectSSE, fetchPosts } from "../api";
+import { type Comment, connectSSE, fetchPosts, type Post } from "../api";
 import { PostCard } from "../components/PostCard";
 
 export function Timeline() {
